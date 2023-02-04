@@ -52,6 +52,7 @@ def plot_data(data, y, w, b, d):
                 else:
                     plt.scatter(X[i, 1], X[i, 2], facecolors='None', color='b')
 
+
 def Phi(X):
     return 1 / (1 + tf.math.exp(-X))
 
@@ -146,13 +147,11 @@ def gradient_descent(data, w, b):
     X = data['X']
     y = data['y']
 
-    lmbda = tf.Variable(5e-5, dtype=tf.float64)
+    lmbda = tf.Variable(5e-2, dtype=tf.float64)
     w0 = w
     b0 = b
 
     for i in range(5000):
-        pre_b = b
-        pre_w = w
 
         dC_dw = compute_dC_dw(w, b, data)
         dC_db = compute_dC_db(w, b, data)
@@ -181,7 +180,7 @@ def gradient_descent(data, w, b):
     plt.show()
 
 
-raw_data = np.load('data5d.npz')
+raw_data = np.load('data2d.npz')
 X = tf.convert_to_tensor(raw_data['X'])
 y = tf.convert_to_tensor(raw_data['y'])
 data = {'X': X, 'y': y}

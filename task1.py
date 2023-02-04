@@ -148,13 +148,12 @@ def gradient_descent(data, w, b):
     X = data['X']
     y = data['y']
 
-    lmbda = 5e-5
+    lmbda = 5e-2
     w0 = w
     b0 = b
 
     for i in range(5000):
-        pre_b = b
-        pre_w = w
+     
 
         dC_dw = compute_dC_dw(w, b, data)
         dC_db = compute_dC_db(w, b, data)

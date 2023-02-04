@@ -4,34 +4,44 @@ import matplotlib.pyplot as plt
 import math
 import random
 
-def draw_line(data2d, w, b):
-
-    X = data2d['X']
-    y = data2d['y']
-    x_vals = X[:, 0]
-    y_vals = (w[0] * X[:, 0] + b) / (-w[1])
-
-    for i in range(len(X)):
-        plt.plot(x_vals, y_vals, '-', color='g')
-    
-
-def scatter_2d_data(data2d, w, b):
-    X = data2d['X']
-    y = data2d['y']
+def draw_line(data, w, b):
+    X = data['X']
+    y = data['y']
+    x0_vals = X[:, 0]
+    x1_vals = (w[0] * X[:, 0] + b) / (-w[1])
 
     for i in range(len(X)):
-        if y[i] == 1:
-            plt.scatter(X[i, 0], X[i, 1], color='r')
-        elif y[i] == 0:
-            plt.scatter(X[i, 0], X[i, 1], color='b')
+        plt.plot(x0_vals, x1_vals, '-', color='g')
+
+
+def plot_data(data, y, w, b, d):
+    if d == 2:
+        X = data['X']
+        y_hat = data['y']
+
+        for i in range(len(X)):
+            if y_hat[i] == 1:
+
+                if y_hat[i] == y[i]:
+                    plt.scatter(X[i, 0], X[i, 1], color='r')
+                else:
+                    plt.scatter(X[i, 0], X[i, 1], facecolors='None', color='r')
+
+            elif y_hat[i] == 0:
+                
+                if y_hat[i] == y[i]:
+                    plt.scatter(X[i, 0], X[i, 1], color='b')
+                else:
+                    plt.scatter(X[i, 0], X[i, 1], facecolors='None', color='b')
+
 
 def Phi(X):
     return 1 / (1 + tf.math.exp(-X))
 
 
 def C(w, b, data):
-    X = data[0]
-    y = data[1]
+    X = data['X']
+    y = data['y']
     
     N = len(X)
 
@@ -41,17 +51,6 @@ def C(w, b, data):
 
     return cost
 
-def cross_entropy(w, b, data):
-    X = data[0]
-    y = data[1]
-    
-    N = len(X)
-
-    cost = 0
-    for i in range(N):
-        cost += y[i] * tf.math.log(Phi(tf.tensordot(X[i], w, 1) + b)) + (1 - y[i]) * tf.math.log(1 - Phi(tf.tensordot(X[i], w, 1) + b))
-
-    return -1 * cost
 
 def compute_dC_dw(w,b, data):
 
@@ -62,6 +61,7 @@ def compute_dC_dw(w,b, data):
 
     return gradient
 
+
 def compute_dC_db(w,b, data):
 
     with tf.GradientTape() as tape:
@@ -71,21 +71,36 @@ def compute_dC_db(w,b, data):
 
     return gradient
 
+
 def compute_dC_dw_numeric(w,b, data):
-    eps = 1e-6
+    h = 1e-6
     
     C1 = C(w, b, data)
-    C2 = C(w + eps, b, data)
+    C2 = C(w + h, b, data)
 
-    return (C2 - C1) / eps
+    return (C2 - C1) / h
+
 
 def compute_dC_db_numeric(w,b, data):
-    eps = 1e-6
+    h = 1e-6
     
     C1 = C(w, b, data)
-    C2 = C(w, b + eps, data)
+    C2 = C(w, b + h, data)
 
-    return (C2 - C1) / eps
+    return (C2 - C1) / h
+
+
+def cal_missclassification_err(y, y_hat):
+
+    misclassified = 0
+    N = len(y)
+
+    for i in range(N):
+        if y[i] != y_hat[i]:
+            misclassified += 1
+
+    return misclassified / N
+
 
 def classify(X, y, w, b):
     phi = [Phi(tf.tensordot(X[i], w, 1) + b) for i in range(len(X))]
@@ -109,62 +124,62 @@ def classify(X, y, w, b):
 
     return {'X': X, 'y': y_hat}
 
-    
+
+def gradient_descent(data, w, b):
+    X = data['X']
+    y = data['y']
+
+    lmbda = tf.Variable(5e-5, dtype=tf.float64)
+    w0 = w
+    b0 = b
+
+    for i in range(5000):
+        pre_b = b
+        pre_w = w
+
+        dC_dw = compute_dC_dw(w, b, data)
+        dC_db = compute_dC_db(w, b, data)
+        w = tf.Variable(w - tf.multiply(dC_dw, lmbda))
+        b = tf.Variable(b - tf.multiply(dC_db, lmbda))
+        print("Cost function = ", C(w, b, data))
+        
+        classified_data = classify(X, y, w, b)
+        
+
+        plt.cla()
+        if d == 2:
+            draw_line(raw_data, w0, b0)
+        plot_data(classified_data, y, w, b, d)
+        plt.draw()
+        plt.pause(.1)
+
+        y_hat = classified_data['y']
+        if i > 0 and np.linalg.norm(np.array(dC_dw)) < 5 and np.linalg.norm(np.array(dC_db)) < 2:
+            break
+        elif cal_missclassification_err(y_hat, y) == 0.0:
+            break
+
+    print('Done')
+    plot_data(classified_data, w, b, d)
+    plt.show()
+
+
 raw_data = np.load('data2d.npz')
 X = tf.convert_to_tensor(raw_data['X'])
 y = tf.convert_to_tensor(raw_data['y'])
-data = (X, y)
+data = {'X': X, 'y': y}
 d = len(X[0])
 w = tf.Variable(tf.random.uniform([d], minval=0, maxval=1, dtype=tf.float64))
 b = tf.Variable(tf.random.uniform([], minval=0, maxval=1, dtype=tf.float64))
 
-dC_dw = compute_dC_dw(w,b, data)
-dC_db = compute_dC_db(w,b, data)
+dC_dw = compute_dC_dw(w, b, data)
+dC_db = compute_dC_db(w, b, data)
 dC_dw_n = compute_dC_dw_numeric(w,b, data)
 dC_db_n = compute_dC_db_numeric(w,b, data)
 
-print("Absolute error of gradient of C w.r.t w = ", np.linalg.norm(dC_dw - dC_dw_n)) # absolute error
-print("Relative error of gradient of C w.r.t w = ", np.linalg.norm(dC_dw - dC_dw_n) / np.linalg.norm(dC_dw)) # relative error
-print("Absolute error of gradient of C w.r.t b = ", np.linalg.norm(dC_db - dC_db_n)) # absolute error
-print("Relative error of gradient of C w.r.t b = ", np.linalg.norm(dC_db - dC_db_n) / np.linalg.norm(dC_db)) # relative error
+print("Absolute error of ∂C/∂w = ", np.linalg.norm(dC_dw - dC_dw_n))
+print("Relative error of ∂C/∂w = ", np.linalg.norm(dC_dw - dC_dw_n) / np.linalg.norm(dC_dw))
+print("Absolute error of ∂C/∂b = ", np.linalg.norm(dC_db - dC_db_n))
+print("Relative error of ∂C/∂b = ", np.linalg.norm(dC_db - dC_db_n) / np.linalg.norm(dC_db))
 
-# Gradient descent
-lmbda = tf.Variable(0.00005, dtype=tf.float64)
-
-w0 = w
-b0 = b
-step = 0
-while True:
-
-    step += 1
-    pre_b = b
-    pre_w = w
-
-    dC_dw = compute_dC_dw(w,b, data)
-    dC_db = compute_dC_db(w,b, data)
-    w = tf.Variable(w - tf.multiply(dC_dw, lmbda))
-    b = tf.Variable(b - tf.multiply(dC_db, lmbda))
-    print("Cost function = ", C(w, b, data))
-    print(np.linalg.norm(np.array(dC_dw)))
-    print(np.linalg.norm(np.array(dC_db)))
-
-    
-    data2d = classify(X, y, w, b)
-    
-
-    plt.cla()
-    draw_line(raw_data, w0, b0)
-    scatter_2d_data(data2d, w, b)
-    plt.draw()
-    plt.pause(.1)
-
-    if step > 1 and np.linalg.norm(np.array(dC_dw)) < 5 and np.linalg.norm(np.array(dC_db)) < 2:
-        print("Best solution in step ", step)
-        break
-
-    if step == 5000:
-        print("Best solution in step ", step)
-        break
-
-scatter_2d_data(data2d, w, b)
-plt.show()
+gradient_descent(data, w, b)

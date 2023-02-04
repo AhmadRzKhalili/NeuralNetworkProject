@@ -33,7 +33,24 @@ def plot_data(data, y, w, b, d):
                     plt.scatter(X[i, 0], X[i, 1], color='b')
                 else:
                     plt.scatter(X[i, 0], X[i, 1], facecolors='None', color='b')
+    elif d == 5:
+        X = data['X']
+        y_hat = data['y']
 
+        for i in range(len(X)):
+            if y_hat[i] == 1:
+
+                if y_hat[i] == y[i]:
+                    plt.scatter(X[i, 1], X[i, 2], color='r')
+                else:
+                    plt.scatter(X[i, 1], X[i, 2], facecolors='None', color='r')
+
+            elif y_hat[i] == 0:
+
+                if y_hat[i] == y[i]:
+                    plt.scatter(X[i, 1], X[i, 2], color='b')
+                else:
+                    plt.scatter(X[i, 1], X[i, 2], facecolors='None', color='b')
 
 def Phi(X):
     return 1 / (1 + tf.math.exp(-X))
@@ -164,7 +181,7 @@ def gradient_descent(data, w, b):
     plt.show()
 
 
-raw_data = np.load('data2d.npz')
+raw_data = np.load('data5d.npz')
 X = tf.convert_to_tensor(raw_data['X'])
 y = tf.convert_to_tensor(raw_data['y'])
 data = {'X': X, 'y': y}
